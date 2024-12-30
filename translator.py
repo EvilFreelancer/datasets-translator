@@ -34,6 +34,10 @@ model = T5ForConditionalGeneration.from_pretrained(
 )
 tokenizer = T5Tokenizer.from_pretrained(model_name)
 
+# Let's increase the max length of the model from 512 to 1024
+tokenizer.model_max_length = 1024
+model.config.max_length = 1024
+
 
 def translate_text(text, to_lang='ru'):
     """Translates English text to Russian using the T5 model."""
