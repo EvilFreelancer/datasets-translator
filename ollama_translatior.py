@@ -2,15 +2,15 @@ import json
 from typing import List
 from tqdm import tqdm
 import fire
-import ollama
+from ollama import Client
 
 OLLAMA_BASE_URL = "http://localhost:11434"
-
-OLLAMA_MODEL = "llama3.1:8b-q8_0"
+OLLAMA_MODEL = "qwen2.5:32b"
 
 DEFAULT_SYSTEM_PROMPT = (
     "Translate provided text to Russian language. "
     "Your reply should contain ONLY the translated text, nothing else. "
+    "DO NOT CONVERT TeX FORMULAS, DO NOT TRANSLATE CODE BLOCKS, DO NOT TRANSLATE NUMBERS. "
     "Please use exactly the same formatting as the original text."
 )
 
@@ -18,8 +18,8 @@ DEFAULT_SYSTEM_PROMPT = (
 def ollama_translate(
     system_prompt: str,
     text_to_translate: str,
-    ollama_base_url: str = OLLAMA_BASE_URL,
-    ollama_model: str = OLLAMA_MODEL
+    ollama_base_url: str,
+    ollama_model: str,
 ) -> str:
     """
     Translate provided text using Ollama
@@ -32,24 +32,15 @@ def ollama_translate(
     if not text_to_translate.strip():
         return text_to_translate
 
-    # Prepare prompt to translate
-    prompt = f"{system_prompt}\n\n{text_to_translate}".strip()
-
     # Call Ollama
-    response = ollama.generate(
-        base_url=ollama_base_url,
-        model=ollama_model,
-        prompt=prompt,
-        stream=False
-    )
+    client = Client(host=ollama_base_url)
+    response = client.chat(model=ollama_model, stream=False, messages=[
+        {'role': 'system', 'content': system_prompt},
+        {'role': 'user', 'content': text_to_translate},
+    ])
 
     # Response processing
-    if isinstance(response, dict) and "content" in response:
-        return response["content"].strip()
-    elif isinstance(response, str):
-        return response.strip()
-    else:
-        return str(response).strip()
+    return str(response.message.content).strip()
 
 
 def translate_dataset(
@@ -70,7 +61,10 @@ def translate_dataset(
     :param ollama_model: str Model which will be used for translation
     :return:
     """
-    with open(input_path, 'r', encoding='utf-8') as fin, open(output_path, 'w', encoding='utf-8') as fout:
+    with (
+        open(input_path, 'r', encoding='utf-8') as fin,
+        open(output_path, 'w', encoding='utf-8') as fout
+    ):
 
         for line in tqdm(fin, desc=f"Translating JSONL dataset: {input_path}"):
             line = line.strip()
@@ -81,7 +75,16 @@ def translate_dataset(
             new_item = {}
 
             for key, value in item.items():
-                if key in fields_to_translate or fields_to_translate is None:
+                if (
+                    (
+                        key in fields_to_translate
+                        or fields_to_translate is None
+                    )
+                    and (
+                        isinstance(value, str)
+                        and not value.isnumeric()
+                    )
+                ):
                     new_item[key] = ollama_translate(
                         system_prompt=system_prompt,
                         text_to_translate=value,
