@@ -1,7 +1,9 @@
-torch~=2.4.1
-transformers~=4.45.1
-tqdm~=4.66.5
+torch~=2.5.1
+transformers~=4.47.1
+tqdm~=4.67.1
 sentencepiece~=0.2.0
-bitsandbytes~=0.44.1
-accelerate~=0.34.2
+bitsandbytes~=0.45.0
+accelerate~=1.2.1
 beautifulsoup4~=4.12.3
+fire~=0.7.0
+ollama~=0.4.5
