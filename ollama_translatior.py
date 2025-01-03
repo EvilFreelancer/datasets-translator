@@ -9,7 +9,7 @@ OLLAMA_BASE_URL = "http://localhost:11434"
 OLLAMA_MODEL = "llama3.1:8b-q8_0"
 
 DEFAULT_SYSTEM_PROMPT = (
-    "Translate text from US English to Russian. "
+    "Translate provided text to Russian language. "
     "Your reply should contain ONLY the translated text, nothing else. "
     "Please use exactly the same formatting as the original text."
 )
